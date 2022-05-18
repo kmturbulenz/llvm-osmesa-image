@@ -1,0 +1,67 @@
+name: Docker image build
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch: ~
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: docker/setup-buildx-action@v2
+      name: Set up Docker Buildx
+      id: buildx
+
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: build-${{ github.sha }}
+        restore-keys: |
+          build-${{ github.sha }}
+          build-
+
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: |
+          ghcr.io/${{ github.repository }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=tag
+          type=sha
+
+    - uses: docker/login-action@v2
+      name: Login to Github Packages
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: docker/build-push-action@v3
+      name: Build image and push to GitHub Container Registry
+      with:
+        context: .
+        tags: ${{ steps.meta.outputs.tags }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+        # build on feature branches, push only on master branch
+        push: ${{ github.ref == 'refs/heads/master' }}
+
+    # Cache trick from:
+    # https://evilmartians.com/chronicles/build-images-on-github-actions-with-docker-layer-caching
+    #
+    # Other refs:
+    # https://github.com/docker/build-push-action/issues/252
+    # https://github.com/moby/buildkit/issues/1896
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache

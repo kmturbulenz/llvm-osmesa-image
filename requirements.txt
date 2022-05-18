@@ -1,0 +1,8 @@
+auditwheel==5.1.2
+Mako==1.2.0
+MarkupSafe==2.1.1
+meson==0.62.1
+pip==22.0.4
+pyelftools==0.28
+setuptools==62.0.0
+wheel==0.37.1
