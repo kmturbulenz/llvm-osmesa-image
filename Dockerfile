@@ -143,3 +143,7 @@ RUN mkdir /opt/TBB && \
     tar -xf oneapi-tbb-${TBB_VER}-lin.tgz && \
     rm oneapi-tbb-${TBB_VER}-lin.tgz
 ENV TBB_ROOT="/opt/TBB/oneapi-tbb-${TBB_VER}"
+
+# These are needed as ENV's when running the image
+ENV MESA_VER=${MESA_VER}
+ENV LLVM_VER=${LLVM_VER}
