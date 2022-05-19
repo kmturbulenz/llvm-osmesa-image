@@ -101,8 +101,8 @@ RUN set -o pipefail && \
     rm -rf build-stage2
 
 # Download Mesa3D library
-ARG MESA_VER="22.1.0-rc5"
-ARG MESA_URL="https://archive.mesa3d.org/mesa-22.1.0-rc5.tar.xz"
+ARG MESA_VER="22.1.0"
+ARG MESA_URL="https://archive.mesa3d.org/mesa-22.1.0.tar.xz"
 RUN mkdir -p /opt/mesa && \
     cd /opt/mesa && \
     wget --no-verbose $MESA_URL && \
