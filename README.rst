@@ -8,3 +8,6 @@ are fairly portable in terms of ``glibc`` versions (minimum ``glibc`` 2.17 -
 same as ``manylinux2014`` minimum requirement).
 
 This image can then be used to compile the VTK library against OSMesa.
+
+Images are automatically build with Github Actions and are published at the
+`Github container registry <https://github.com/kmturbulenz/llvm-osmesa-image/pkgs/container/llvm-osmesa-image>`_.
