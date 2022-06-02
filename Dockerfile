@@ -10,7 +10,7 @@ RUN yum check-update ; \
     yum -y install wget unzip centos-release-scl patchelf zlib-devel bison flex binutils-devel patch perl-Data-Dumper && \
     yum -y install rh-python38 rh-python38-python-devel \
                    llvm-toolset-7.0 llvm-toolset-7.0-clang \
-                   rh-git218 && \
+                   rh-git227 && \
     yum clean all
 
 # Python 3.8 package installation along with basic packages
@@ -23,8 +23,8 @@ RUN source scl_source enable rh-python38 && \
     pip install -r requirements.txt
 
 # Fetch and install updated CMake in /usr/local
-ARG CMAKE_VER="3.23.1"
-ARG CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1-linux-x86_64.tar.gz"
+ENV CMAKE_VER="3.23.2"
+ARG CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz"
 RUN mkdir /tmp/cmake-install && \
     cd /tmp/cmake-install && \
     wget --no-verbose $CMAKE_URL && \
@@ -42,7 +42,7 @@ RUN mkdir /tmp/ninja-install && \
     rm -rf /tmp/ninja-install
 
 # Download LLVM sources
-ARG LLVM_VER="14.0.3"
+ENV LLVM_VER="14.0.4"
 ARG LLVM_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VER}/llvm-project-${LLVM_VER}.src.tar.xz"
 RUN set -o pipefail && \
     mkdir -p /opt/llvm-build && \
@@ -101,8 +101,8 @@ RUN set -o pipefail && \
     rm -rf build-stage2
 
 # Download Mesa3D library
-ARG MESA_VER="22.1.0"
-ARG MESA_URL="https://archive.mesa3d.org/mesa-22.1.0.tar.xz"
+ENV MESA_VER="22.1.1"
+ARG MESA_URL="https://archive.mesa3d.org/mesa-${MESA_VER}.tar.xz"
 RUN mkdir -p /opt/mesa && \
     cd /opt/mesa && \
     wget --no-verbose $MESA_URL && \
@@ -143,7 +143,3 @@ RUN mkdir /opt/TBB && \
     tar -xf oneapi-tbb-${TBB_VER}-lin.tgz && \
     rm oneapi-tbb-${TBB_VER}-lin.tgz
 ENV TBB_ROOT="/opt/TBB/oneapi-tbb-${TBB_VER}"
-
-# These are needed as ENV's when running the image
-ENV MESA_VER=${MESA_VER}
-ENV LLVM_VER=${LLVM_VER}

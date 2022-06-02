@@ -11,3 +11,6 @@ This image can then be used to compile the VTK library against OSMesa.
 
 Images are automatically build with Github Actions and are published at the
 `Github container registry <https://github.com/kmturbulenz/llvm-osmesa-image/pkgs/container/llvm-osmesa-image>`_.
+If you want to build the image yourself locally, the command is::
+
+    docker build -t llvm-osmesa-image:latest .
