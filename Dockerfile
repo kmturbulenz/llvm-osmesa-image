@@ -23,7 +23,7 @@ RUN source scl_source enable rh-python38 && \
     pip install -r requirements.txt
 
 # Fetch and install updated CMake in /usr/local
-ENV CMAKE_VER="3.23.2"
+ENV CMAKE_VER="3.23.3"
 ARG CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz"
 RUN mkdir /tmp/cmake-install && \
     cd /tmp/cmake-install && \
@@ -42,7 +42,7 @@ RUN mkdir /tmp/ninja-install && \
     rm -rf /tmp/ninja-install
 
 # Download LLVM sources
-ENV LLVM_VER="14.0.4"
+ENV LLVM_VER="14.0.6"
 ARG LLVM_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VER}/llvm-project-${LLVM_VER}.src.tar.xz"
 RUN set -o pipefail && \
     mkdir -p /opt/llvm-build && \
@@ -101,7 +101,7 @@ RUN set -o pipefail && \
     rm -rf build-stage2
 
 # Download Mesa3D library
-ENV MESA_VER="22.1.1"
+ENV MESA_VER="22.1.7"
 ARG MESA_URL="https://archive.mesa3d.org/mesa-${MESA_VER}.tar.xz"
 RUN mkdir -p /opt/mesa && \
     cd /opt/mesa && \
