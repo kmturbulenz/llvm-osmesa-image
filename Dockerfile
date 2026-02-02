@@ -31,9 +31,8 @@ RUN dnf check-update ; \
     dnf clean all && \
     alternatives --set python3 /usr/bin/python3.12
 
-# Python 3.8 package installation along with basic packages
-RUN python3 -m pip install --no-cache-dir --upgrade pip
-RUN python3 -m pip install --no-cache-dir auditwheel \
+RUN python3 -m pip install --no-cache-dir --upgrade pip && \
+    python3 -m pip install --no-cache-dir auditwheel \
                                           Mako \
                                           MarkupSafe \
                                           meson \
@@ -42,27 +41,40 @@ RUN python3 -m pip install --no-cache-dir auditwheel \
                                           setuptools \
                                           wheel
 
+ARG TARGETARCH
+ENV CPU_ARCH=${TARGETARCH}
+ENV CPU_ARCH=${CPU_ARCH/amd64/x86-64-v2}
+ENV CPU_ARCH=${CPU_ARCH/arm64/armv8.2-a}
+
+ENV BUILD_ARCH=${TARGETARCH}
+ENV BUILD_ARCH=${BUILD_ARCH/amd64/x86_64}
+ENV BUILD_ARCH=${BUILD_ARCH/arm64/aarch64}
+
 # Fetch and install updated CMake in /usr/local
-ENV CMAKE_VER="3.31.7"
-ARG CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz"
+ENV CMAKE_VER="3.31.9"
+ENV CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-${BUILD_ARCH}.tar.gz"
 RUN mkdir /tmp/cmake-install && \
     cd /tmp/cmake-install && \
     wget --no-verbose $CMAKE_URL && \
-    tar -xf cmake-${CMAKE_VER}-linux-x86_64.tar.gz -C /usr/local --strip-components=1 && \
+    tar -xf cmake-${CMAKE_VER}-linux-${BUILD_ARCH}.tar.gz -C /usr/local --strip-components=1 && \
     cd / && \
     rm -rf /tmp/cmake-install
 
 # Fetch and install updated Ninja-build in /usr/local
-ARG NINJA_URL="https://github.com/ninja-build/ninja/releases/download/v1.13.1/ninja-linux.zip"
-RUN mkdir /tmp/ninja-install && \
+RUN case "${BUILD_ARCH}" in \
+        x86_64) NINJA_ARCH="" ;; \
+        aarch64) NINJA_ARCH="-aarch64" ;; \
+        *) echo "Unsupported architecture: ${BUILD_ARCH}" >&2; exit 1 ;; \
+    esac && \
+    export NINJA_URL="https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-linux$NINJA_ARCH.zip" && \
+    mkdir /tmp/ninja-install && \
     cd /tmp/ninja-install && \
     wget --no-verbose $NINJA_URL && \
-    unzip ninja-linux.zip -d /usr/local/bin && \
+    unzip ninja-linux${NINJA_ARCH}.zip -d /usr/local/bin && \
     cd / && \
     rm -rf /tmp/ninja-install
 
 # CPU architecture for optimizations
-ARG CPU_ARCH="x86-64-v2"
 ENV CFLAGS="-march=${CPU_ARCH}"
 ENV CXXFLAGS="-march=${CPU_ARCH}"
 

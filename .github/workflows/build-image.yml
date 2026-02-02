@@ -9,7 +9,16 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+
+    runs-on: ${{ matrix.runner }}
 
     steps:
     - uses: actions/checkout@v5
@@ -22,16 +31,16 @@ jobs:
       name: Build image
       with:
         context: .
-        outputs: type=docker,dest=${{ runner.temp }}/llvm-osmesa-image.tar
-        tags: llvm-osmesa-image:latest
+        outputs: type=docker,dest=${{ runner.temp }}/llvm-osmesa-image-${{ matrix.arch }}.tar
+        tags: llvm-osmesa-image:latest-${{ matrix.arch }}
 
     - name: Copy OSMesa out of Docker image
       run: |
         mkdir libOSMesa
         cd libOSMesa
-        docker load --input ${{ runner.temp }}/llvm-osmesa-image.tar
+        docker load --input ${{ runner.temp }}/llvm-osmesa-image-${{ matrix.arch }}.tar
         docker images
-        docker create --name temp-container llvm-osmesa-image:latest
+        docker create --name temp-container llvm-osmesa-image:latest-${{ matrix.arch }}
         docker cp temp-container:/usr/local/lib64/libOSMesa.so.8.0.0 .
         docker cp temp-container:/usr/local/lib64/libOSMesa.so.8 .
         docker cp temp-container:/usr/local/lib64/libOSMesa.so .
@@ -45,9 +54,9 @@ jobs:
       run: |
         if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
           TAG="${GITHUB_REF#refs/tags/}"
-          echo "tarname=libOSMesa-$TAG.tar.gz" >> $GITHUB_OUTPUT
+          echo "tarname=libOSMesa-$TAG-${{ matrix.arch }}.tar.gz" >> $GITHUB_OUTPUT
         else
-          echo "tarname=libOSMesa.tar.gz" >> $GITHUB_OUTPUT
+          echo "tarname=libOSMesa-${{ matrix.arch }}.tar.gz" >> $GITHUB_OUTPUT
         fi
 
     - name: Create OSMesa tarball
@@ -57,7 +66,7 @@ jobs:
     - name: Upload OSMesa tarball as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: libOSMesa
+        name: ${{ steps.name.outputs.tarname }}
         path: ${{ steps.name.outputs.tarname }}
         retention-days: 14
 
