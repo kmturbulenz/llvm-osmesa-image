@@ -21,29 +21,24 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
 
-    - uses: docker/setup-buildx-action@v3
+    - uses: docker/setup-buildx-action@v4
       name: Set up Docker Buildx
       id: buildx
 
-    - uses: docker/build-push-action@v6
+    - uses: docker/build-push-action@v7
       name: Build image
       with:
         context: .
-        outputs: type=docker,dest=${{ runner.temp }}/llvm-osmesa-image-${{ matrix.arch }}.tar
-        tags: llvm-osmesa-image:latest-${{ matrix.arch }}
+        outputs: type=docker,dest=${{ runner.temp }}/llvm-mesa-egl-image-${{ matrix.arch }}.tar
+        tags: llvm-mesa-egl-image:latest-${{ matrix.arch }}
 
-    - name: Copy OSMesa out of Docker image
+    - name: Copy Mesa EGL bundle out of Docker image
       run: |
-        mkdir libOSMesa
-        cd libOSMesa
-        docker load --input ${{ runner.temp }}/llvm-osmesa-image-${{ matrix.arch }}.tar
-        docker images
-        docker create --name temp-container llvm-osmesa-image:latest-${{ matrix.arch }}
-        docker cp temp-container:/usr/local/lib64/libOSMesa.so.8.0.0 .
-        docker cp temp-container:/usr/local/lib64/libOSMesa.so.8 .
-        docker cp temp-container:/usr/local/lib64/libOSMesa.so .
+        docker load --input ${{ runner.temp }}/llvm-mesa-egl-image-${{ matrix.arch }}.tar
+        docker create --name temp-container llvm-mesa-egl-image:latest-${{ matrix.arch }}
+        docker cp temp-container:/opt/mesa-egl mesa-egl
         docker rm temp-container
 
     - name: Set package name
@@ -54,17 +49,17 @@ jobs:
       run: |
         if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
           TAG="${GITHUB_REF#refs/tags/}"
-          echo "tarname=libOSMesa-$TAG-${{ matrix.arch }}.tar.gz" >> $GITHUB_OUTPUT
+          echo "tarname=mesa-egl-$TAG-${{ matrix.arch }}.tar.gz" >> $GITHUB_OUTPUT
         else
-          echo "tarname=libOSMesa-${{ matrix.arch }}.tar.gz" >> $GITHUB_OUTPUT
+          echo "tarname=mesa-egl-${{ matrix.arch }}.tar.gz" >> $GITHUB_OUTPUT
         fi
 
-    - name: Create OSMesa tarball
+    - name: Create Mesa EGL tarball
       run: |
-        tar -czf ${{ steps.name.outputs.tarname }} libOSMesa
+        tar -czf ${{ steps.name.outputs.tarname }} mesa-egl
 
-    - name: Upload OSMesa tarball as artifact
-      uses: actions/upload-artifact@v4
+    - name: Upload Mesa EGL tarball as artifact
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ steps.name.outputs.tarname }}
         path: ${{ steps.name.outputs.tarname }}
@@ -72,7 +67,7 @@ jobs:
 
     - name: Create and upload release
       if: github.ref_type == 'tag'
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         fail_on_unmatched_files: true
         files: |

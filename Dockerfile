@@ -1,6 +1,6 @@
 FROM oraclelinux:8
 LABEL maintainer="Håkon Strandenes <h.strandenes@km-turbulenz.no>"
-LABEL description="OSMesa compiled from sources"
+LABEL description="Mesa EGL surfaceless compiled from sources"
 
 # Note: "yum check-update" return code 100 if there are packages to be updated,
 # hence the ";" instead of "&&"
@@ -11,6 +11,7 @@ RUN dnf check-update ; \
                    flex \
                    git \
                    git-lfs \
+                   libdrm-devel \
                    libxml2-devel \
                    llvm-devel \
                    llvm-toolset \
@@ -50,16 +51,6 @@ ENV BUILD_ARCH=${TARGETARCH}
 ENV BUILD_ARCH=${BUILD_ARCH/amd64/x86_64}
 ENV BUILD_ARCH=${BUILD_ARCH/arm64/aarch64}
 
-# Fetch and install updated CMake in /usr/local
-ENV CMAKE_VER="3.31.9"
-ENV CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-${BUILD_ARCH}.tar.gz"
-RUN mkdir /tmp/cmake-install && \
-    cd /tmp/cmake-install && \
-    wget --no-verbose $CMAKE_URL && \
-    tar -xf cmake-${CMAKE_VER}-linux-${BUILD_ARCH}.tar.gz -C /usr/local --strip-components=1 && \
-    cd / && \
-    rm -rf /tmp/cmake-install
-
 # Fetch and install updated Ninja-build in /usr/local
 RUN case "${BUILD_ARCH}" in \
         x86_64) NINJA_ARCH="" ;; \
@@ -79,29 +70,35 @@ ENV CFLAGS="-march=${CPU_ARCH}"
 ENV CXXFLAGS="-march=${CPU_ARCH}"
 
 # Download Mesa3D library
-ENV MESA_VER="25.0.7"
+ENV MESA_VER="26.2.2"
+ENV MESA_SHA256="eeb29ca7e56cfaa8e8a79538dcf834e3b18e501c31bef5145e959ea437cc4216"
 ARG MESA_URL="https://archive.mesa3d.org/mesa-${MESA_VER}.tar.xz"
 RUN mkdir -p /opt/mesa && \
     cd /opt/mesa && \
     wget --no-verbose $MESA_URL && \
+    echo "${MESA_SHA256}  mesa-${MESA_VER}.tar.xz" | sha256sum -c - && \
     tar -xf mesa-${MESA_VER}.tar.xz && \
     rm mesa-${MESA_VER}.tar.xz
 
-# Compile OSMesa
+# Compile a self-contained EGL surfaceless software-rendering stack.
 RUN set -o pipefail && \
     cd /opt/mesa/mesa-${MESA_VER} && \
-    CC=clang CXX=clang++ meson build \
+    CC=clang CXX=clang++ meson setup build \
         -Dbuildtype=release \
-        -Dosmesa=true \
+        -Degl=enabled \
+        -Degl-native-platform=surfaceless \
         -Dgallium-drivers=llvmpipe \
+        -Dgbm=disabled \
+        -Dglvnd=disabled \
         -Dglx=disabled \
-        -Degl=disabled \
         -Dvulkan-drivers=[] \
         -Dplatforms= \
         -Dshared-llvm=disabled \
         -Dshared-glapi=disabled \
         -Dlibunwind=disabled \
-        -Dprefix=/usr/local 2>&1 | tee configure.log && \
-    ninja -C build install 2>&1 | tee ninja.log
+        -Dprefix=/opt/mesa-egl \
+        -Dlibdir=lib 2>&1 | tee configure.log && \
+    ninja -C build install 2>&1 | tee ninja.log && \
+    cp -a /usr/lib64/libdrm.so.2* /opt/mesa-egl/lib/
 
-ENV OSMESA_ROOT="/usr/local"
+ENV MESA_EGL_ROOT="/opt/mesa-egl"
